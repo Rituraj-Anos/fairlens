@@ -1,0 +1,403 @@
+# FairLens — Google Solution Challenge 2026
+## "Unbiased AI Decision" Track | Team of 2 Roadmap
+
+---
+
+> [!IMPORTANT]
+> **Deadline:** April 28, 2026, 11:59 PM IST — ~11 days from now (April 17).
+> **Member A** → Prototype (live MVP link + GitHub repo + demo video)
+> **Member B** → PPT deck (PDF ≤ 5 MB using the official template)
+
+---
+
+# 🔧 MEMBER A — Prototype Developer Roadmap
+
+## What You're Building: FairLens
+
+A **web-based AI Bias Detection & Mitigation Dashboard** that:
+1. Accepts a CSV dataset and a trained model (or generates synthetic data)
+2. Computes fairness metrics across protected attributes (gender, race, age, etc.)
+3. Flags discriminatory patterns with visual heatmaps and charts
+4. Uses **Gemini API** to generate plain-English bias audit reports and fix suggestions
+5. Applies debiasing techniques and shows before/after comparison
+6. Runs on **Google Cloud Run** (satisfies Google Cloud deployment requirement)
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React + Vite + TailwindCSS |
+| Charts | Recharts + D3.js |
+| Backend | Python FastAPI |
+| AI Layer | **Gemini 1.5 Flash** (bias narration + fix suggestions) |
+| Bias Engine | **Fairlearn** + **AIF360** (pip) |
+| Deployment | **Google Cloud Run** (Docker) |
+| Storage | Google Cloud Storage (for uploaded datasets) |
+| Auth (optional) | Firebase Auth |
+| CI/CD | GitHub Actions |
+
+---
+
+## File Architecture
+
+```
+fairlens/
+├── backend/
+│   ├── main.py                  # FastAPI app entry
+│   ├── routers/
+│   │   ├── upload.py            # Dataset upload endpoint
+│   │   ├── analyze.py           # Bias metrics computation
+│   │   ├── mitigate.py          # Debiasing endpoint
+│   │   └── report.py            # Gemini narration endpoint
+│   ├── services/
+│   │   ├── bias_engine.py       # Fairlearn + AIF360 logic
+│   │   ├── gemini_client.py     # Gemini API calls
+│   │   └── data_processor.py   # CSV parsing, validation
+│   ├── models/
+│   │   └── schemas.py           # Pydantic models
+│   ├── Dockerfile
+│   └── requirements.txt
+│
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── UploadZone.tsx        # Drag-and-drop CSV upload
+│   │   │   ├── MetricsPanel.tsx      # Fairness metrics grid
+│   │   │   ├── BiasHeatmap.tsx       # D3 heatmap by attribute
+│   │   │   ├── MitigationPanel.tsx   # Before/after comparison
+│   │   │   ├── GeminiReport.tsx      # AI-narrated audit card
+│   │   │   └── AlertBanner.tsx       # Severity flags
+│   │   ├── pages/
+│   │   │   ├── Dashboard.tsx         # Main analysis view
+│   │   │   ├── Upload.tsx            # Dataset onboarding
+│   │   │   └── Report.tsx            # Shareable audit report
+│   │   ├── hooks/
+│   │   │   └── useBiasAnalysis.ts
+│   │   └── App.tsx
+│   ├── index.html
+│   ├── tailwind.config.js
+│   └── vite.config.ts
+│
+├── datasets/                    # Sample CSVs for demo
+│   ├── hiring_sample.csv
+│   ├── loan_approval_sample.csv
+│   └── medical_diagnosis_sample.csv
+│
+├── .github/workflows/
+│   └── deploy.yml               # Cloud Run deployment
+├── docker-compose.yml
+└── README.md
+```
+
+---
+
+## Core Features (MVP Scope)
+
+### Feature 1: CSV Dataset Upload + Auto-Analysis
+- Drag-and-drop or file picker
+- Auto-detects protected attributes (gender, race, age columns)
+- Computes: **Demographic Parity, Equalized Odds, Disparate Impact Ratio, Statistical Parity Difference**
+
+### Feature 2: Bias Dashboard (Visual)
+- Bar charts: prediction rates by group
+- Heatmap: intersectional bias (e.g., Black + Female vs. White + Male)
+- Severity badges: 🔴 Critical / 🟡 Warning / 🟢 Fair
+- Threshold sliders: adjustable fairness cutoffs
+
+### Feature 3: Gemini AI Audit Report
+- Send metrics to Gemini 1.5 Flash with prompt engineering
+- Returns: plain-English explanation of bias, root cause hypothesis, fix suggestions
+- Example prompt:
+  ```
+  "This hiring model shows a Disparate Impact Ratio of 0.65 for women. 
+   The selection rate is 82% for men vs 53% for women. 
+   Explain this bias in simple terms and suggest 3 concrete fixes."
+  ```
+
+### Feature 4: Debiasing (One-Click)
+- Apply **Reweighing** (pre-processing) via AIF360
+- Apply **Exponentiated Gradient** (in-processing) via Fairlearn
+- Show before/after metrics comparison table
+
+### Feature 5: Shareable Report Page
+- PDF/link export of audit results
+- Includes: dataset summary, metrics, AI narration, recommendations
+
+---
+
+## Daily Work Schedule (11 days)
+
+### Day 1–2 (Apr 17–18): Backend Foundation
+- [ ] `git init` + push to GitHub (public repo)
+- [ ] Set up FastAPI project, Dockerfile
+- [ ] Implement `data_processor.py`: CSV parsing, column type detection
+- [ ] Implement `bias_engine.py`: Fairlearn metrics (Demographic Parity, Equalized Odds)
+- [ ] Create 3 sample datasets: hiring, loan, medical
+- [ ] Test endpoints locally with curl/Postman
+
+### Day 3–4 (Apr 19–20): Gemini Integration + Frontend Shell
+- [ ] Implement `gemini_client.py` with Google Generative AI SDK
+- [ ] Build prompt templates for bias narration
+- [ ] Scaffold React + Vite + Tailwind frontend
+- [ ] Build `UploadZone.tsx` with drag-and-drop
+- [ ] Build `MetricsPanel.tsx` — fairness metrics grid
+- [ ] Connect frontend to backend API
+
+### Day 5–6 (Apr 21–22): Visualizations + Debiasing
+- [ ] Build `BiasHeatmap.tsx` using D3.js or Recharts
+- [ ] Add severity badge system (Critical/Warning/Fair)
+- [ ] Implement `/mitigate` endpoint with Reweighing
+- [ ] Build `MitigationPanel.tsx` — before/after comparison
+
+### Day 7–8 (Apr 23–24): Gemini Report UI + Polish
+- [ ] Build `GeminiReport.tsx` — streaming AI audit card
+- [ ] Build shareable `/report` page
+- [ ] Add loading states, error handling, toast notifications
+- [ ] Mobile responsiveness pass
+
+### Day 9 (Apr 25): Cloud Deployment
+- [ ] Push Docker image to Google Artifact Registry
+- [ ] Deploy backend to **Google Cloud Run**
+- [ ] Deploy frontend to **Firebase Hosting** or Cloud Run
+- [ ] Set up environment variables for Gemini API key
+- [ ] End-to-end smoke test on live URL
+
+### Day 10 (Apr 26): Demo Video Recording
+- [ ] Record 2–3 min screen capture demo (OBS or Loom)
+- [ ] Script: Upload CSV → See bias heatmap → Get Gemini report → Apply debiasing → Show improvement
+- [ ] Upload to YouTube (unlisted) or Google Drive
+
+### Day 11 (Apr 27): Buffer + Submission
+- [ ] Write detailed README (setup, architecture, screenshots)
+- [ ] Final GitHub push — ensure public visibility
+- [ ] Fill submission form: live link, GitHub link, video link, Google AI answer (Gemini + Cloud Run)
+
+---
+
+## Google AI Requirement Answer
+> "Gemini 1.5 Flash via the Generative AI API for bias narration and fix suggestion; Google Cloud Run for deployment; Google Cloud Storage for dataset uploads."
+
+---
+
+## Key Bias Metrics to Implement
+
+| Metric | What it measures | Fair threshold |
+|---|---|---|
+| Demographic Parity Difference | Δ in positive prediction rate | ≤ 0.1 |
+| Disparate Impact Ratio | Ratio of selection rates | ≥ 0.8 (80% rule) |
+| Equalized Odds Difference | Δ in true/false positive rates | ≤ 0.1 |
+| Statistical Parity Difference | Difference in P(Ŷ=1) between groups | ≤ 0.05 |
+| Average Odds Difference | Average of FPR and TPR difference | ≤ 0.1 |
+
+---
+
+## Gemini Prompt Engineering Guide
+
+```python
+BIAS_REPORT_PROMPT = """
+You are an AI fairness auditor. A machine learning model has been analyzed.
+Here are the findings:
+
+Dataset: {dataset_name}
+Protected attribute: {attribute} ({group_a} vs {group_b})
+
+Fairness Metrics:
+- Demographic Parity Difference: {dpd}
+- Disparate Impact Ratio: {dir}
+- Equalized Odds Difference: {eod}
+- Statistical Parity Difference: {spd}
+
+Threshold for fairness: Disparate Impact Ratio ≥ 0.80
+
+Your task:
+1. Explain what these numbers mean in plain English (2-3 sentences, no jargon)
+2. Identify the most likely root causes of this bias (bullet points)
+3. Provide 3 specific, actionable recommendations to reduce bias
+4. Rate overall bias severity: CRITICAL / HIGH / MODERATE / LOW
+
+Respond in JSON format with keys: summary, root_causes, recommendations, severity
+"""
+```
+
+---
+
+# 🎨 MEMBER B — PPT Maker Roadmap
+
+## Slide-by-Slide Plan (aligned to submission template)
+
+> Use the official Google Solution Challenge 2026 template. Keep slides clean, data-driven, and visually impactful.
+
+---
+
+### Slide 1: Cover Slide
+- **Title:** FairLens — AI Bias Detection & Mitigation Platform
+- **Tagline:** "Expose hidden discrimination before it harms real people."
+- **Team Name + Names**
+- **Google Solution Challenge 2026 | Unbiased AI Decision Track**
+- *Design tip: Use a dark background with a gradient lens/eye visual or fairness scale icon*
+
+---
+
+### Slide 2: Problem Statement
+**Headline:** "AI systems are making life-changing mistakes — silently."
+
+Content:
+- 80% of AI models trained on historical data inherit human bias
+- Real examples (1 per bullet, keep brief):
+  - Amazon's AI recruiting tool rejected female candidates (2018)
+  - COMPAS recidivism algorithm flagged Black defendants 2× more
+  - Credit algorithms charged higher interest to women with same scores
+- **Bottom line:** No standard tool exists for non-technical organizations to audit bias
+
+*Visuals: 3 icons (job, court, bank) with red X marks. 1 bold data stat.*
+
+---
+
+### Slide 3: Solution Overview
+**Headline:** "FairLens: Upload → Analyze → Fix → Report"
+
+4-step flow diagram:
+1. **Upload** → CSV dataset or model predictions
+2. **Analyze** → Auto-compute 5 fairness metrics across protected groups
+3. **Fix** → One-click debiasing with before/after comparison
+4. **Report** → Gemini-powered plain-English audit report
+
+*Visuals: Horizontal pipeline with icons. No walls of text.*
+
+---
+
+### Slide 4: Key Features
+3-column layout:
+
+| 🔍 Detect | ⚡ Fix | 📊 Report |
+|---|---|---|
+| Heatmap across gender, race, age | Reweighing + Exponentiated Gradient | Gemini AI plain-English narration |
+| 5 industry-standard metrics | Before/after comparison | PDF export + shareable link |
+| Severity badges (Critical/Fair) | Threshold controls | Root cause analysis |
+
+---
+
+### Slide 5: Architecture Diagram
+
+```
+[User Browser]
+      ↓ CSV Upload
+[React Frontend — Firebase Hosting]
+      ↓ REST API
+[FastAPI Backend — Google Cloud Run]
+      ├─→ [Bias Engine: Fairlearn + AIF360]
+      └─→ [Gemini 1.5 Flash API]
+            ↓
+      AI Audit Report (JSON)
+```
+
+Include Google Cloud logo, Gemini logo, Firebase logo.
+
+---
+
+### Slide 6: Demo Screenshots
+- Screenshot 1: Upload screen with sample hiring CSV
+- Screenshot 2: Bias heatmap dashboard (Critical badge visible)
+- Screenshot 3: Gemini AI report card (plain-English explanation)
+- Screenshot 4: Before/after debiasing comparison
+
+*Note to PPT maker: Get these screenshots from Member A as soon as Day 8 is done (Apr 23-24)*
+
+---
+
+### Slide 7: Impact & Use Cases
+
+Who benefits:
+- **HR Departments** — Audit hiring algorithms
+- **Banks & NBFCs** — Check loan approval models
+- **Hospitals** — Audit diagnostic AI tools
+- **Government Agencies** — Procurement + welfare allocation systems
+
+Impact metrics (estimated):
+- 10-minute bias audit vs. weeks of manual review
+- 5 fairness metrics in one dashboard
+- Supports any CSV-based ML model output
+
+---
+
+### Slide 8: Google Technologies Used
+| Technology | How Used |
+|---|---|
+| **Gemini 1.5 Flash** | AI bias narration & fix recommendations |
+| **Google Cloud Run** | Serverless backend deployment |
+| **Google Cloud Storage** | Dataset upload & storage |
+| **Firebase Hosting** | Frontend deployment |
+
+*Include all Google product logos with brief 1-line descriptions*
+
+---
+
+### Slide 9: UN SDG Alignment
+- **SDG 10** — Reduced Inequalities
+- **SDG 16** — Peace, Justice & Strong Institutions
+- **SDG 8** — Decent Work & Economic Growth (fair hiring)
+
+*Use official SDG icons from un.org/sustainabledevelopment*
+
+---
+
+### Slide 10: Team Slide
+- Member A: [Name] — Backend + ML + Cloud
+- Member B: [Name] — Frontend + UI/UX + Presentation
+- Institution name, batch year
+
+---
+
+### Slide 11: Call to Action / Next Steps
+- Live demo link (QR code on slide)
+- GitHub repo QR code
+- "Try FairLens: Paste your CSV, get your bias report in 60 seconds."
+- Future roadmap: Model file upload (.pkl), enterprise dashboard, API integration
+
+---
+
+## PPT Timeline for Member B
+
+| Day | Task |
+|---|---|
+| Apr 17–18 | Finalize structure, create Slides 1–4 (Problem + Solution) |
+| Apr 19–20 | Create architecture diagram (Slide 5), research real bias examples |
+| Apr 21–22 | Create Slides 6–9 (Impact, Google Tech, SDG) |
+| Apr 23–24 | Get screenshots from Member A, insert into Slide 6 |
+| Apr 25 | Final polish, animations, branding consistency |
+| Apr 26 | Export as PDF (≤ 5 MB), verify template compliance |
+| Apr 27 | Final review + submit |
+
+---
+
+## PPT Design Tips
+- **Font:** Google Sans or Roboto (matches Google brand)
+- **Colors:** Dark navy (#0D1117) + Google Blue (#4285F4) + Green (#34A853) + Red (#EA4335)
+- **Max text per slide:** 40 words
+- **Every slide:** 1 headline, 1 visual, ≤5 bullet points
+- **Consistency:** Same header height, same icon style throughout
+
+---
+
+# 📋 Submission Checklist
+
+| Item | Owner | Status |
+|---|---|---|
+| Problem Statement (form field) | Member B | Write from Slide 2 |
+| Solution Overview (form field) | Member B | Write from Slides 3-4 |
+| Live Prototype Link | Member A | Cloud Run URL |
+| Project Deck (PDF ≤ 5MB) | Member B | Export from PPT |
+| GitHub Repository (public) | Member A | With README |
+| Demo Video (YouTube/Drive link) | Member A | 2-3 min |
+| Google Cloud deployed? | Member A | Yes — Cloud Run |
+| Google AI used? | Both | Gemini 1.5 Flash + Cloud Run |
+
+---
+
+> [!TIP]
+> **Critical sync point:** Member A should share screenshots + live URL by **April 24** so Member B can finalize Slide 6 and include the real demo link / QR code.
+
+> [!WARNING]
+> The submission form has a **2056 character limit** for the Solution Overview field. Draft this text early and keep it concise.

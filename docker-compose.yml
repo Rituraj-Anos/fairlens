@@ -1,0 +1,24 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}   # set in .env
+    volumes:
+      - ./backend:/app          # hot-reload for local dev
+      - ./datasets:/datasets    # sample CSVs accessible at /datasets
+    command: uvicorn main:app --host 0.0.0.0 --port 8080 --reload
+
+  # frontend service added in Day 3-4
+  # frontend:
+  #   build: ./frontend
+  #   ports:
+  #     - "5173:5173"
+  #   depends_on:
+  #     - backend
