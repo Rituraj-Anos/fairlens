@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from enum import Enum
 
@@ -36,10 +36,11 @@ class UploadResponse(BaseModel):
 
 class FairnessMetric(BaseModel):
     name: str
-    value: Optional[float]
+    value: float
     threshold: float
-    passed: Optional[bool]
+    passed: bool
     description: str
+    not_applicable: bool = False
 
 
 class GroupStats(BaseModel):
@@ -63,7 +64,7 @@ class AnalysisRequest(BaseModel):
     label_column: str
     protected_attributes: List[str]
     positive_label: Optional[Any] = 1
-    prediction_column: Optional[str] = None  # if None, use label as prediction
+    prediction_column: Optional[str] = None
 
 
 class AnalysisResponse(BaseModel):
@@ -78,7 +79,7 @@ class MitigationRequest(BaseModel):
     label_column: str
     protected_attributes: List[str]
     positive_label: Optional[Any] = 1
-    method: str = "reweighing"  # "reweighing" | "exponentiated_gradient"
+    method: str = "reweighing"
 
 
 class MetricComparison(BaseModel):
@@ -95,6 +96,7 @@ class MitigationResponse(BaseModel):
     before_severity: BiasSeverity
     after_severity: BiasSeverity
     mitigated_session_id: str
+    improvement_pct: float
 
 
 class ReportRequest(BaseModel):

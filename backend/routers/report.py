@@ -35,10 +35,9 @@ def generate_report(req: ReportRequest):
                 return m.value
         return 0.0
 
-    group_stats_payload = [
-        {"group": g.group, "count": g.count, "positive_rate": g.positive_rate}
-        for g in primary.groups
-    ]
+    group_rates_map = {
+        g.group: g.positive_rate for g in primary.groups
+    }
 
     try:
         result = generate_bias_report(
@@ -48,7 +47,7 @@ def generate_report(req: ReportRequest):
             dir_val=_get("disparate_impact_ratio"),
             eod=_get("equalized_odds_difference"),
             spd=_get("statistical_parity_difference"),
-            group_stats=group_stats_payload,
+            group_rates=group_rates_map,
         )
     except Exception as e:
         logger.exception("Report generation failed")

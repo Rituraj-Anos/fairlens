@@ -6,9 +6,10 @@ import GeminiReportCard from '../components/GeminiReportCard';
 
 interface Metric {
   name: string;
-  value: number | null;
-  passed: boolean | null;
+  value: number;
+  passed: boolean;
   description: string;
+  not_applicable?: boolean;
 }
 
 interface AnalysisResults {
@@ -38,19 +39,24 @@ const MetricsDashboard: React.FC = () => {
   const analysis = data.attribute_analyses[0];
   const metrics = analysis.metrics;
 
-  const getStatusColor = (passed: boolean | null) => {
-    if (passed === null) return 'text-zinc-500';
-    return passed ? 'text-primary-container' : 'text-error';
+  const getStatusColor = (m: Metric) => {
+    if (m.not_applicable) return 'text-zinc-500';
+    return m.passed ? 'text-primary-container' : 'text-error';
   };
 
-  const getBadgeColor = (passed: boolean | null) => {
-    if (passed === null) return 'bg-zinc-700';
-    return passed ? 'bg-primary-container' : 'bg-error';
+  const getBadgeColor = (m: Metric) => {
+    if (m.not_applicable) return 'bg-zinc-700';
+    return m.passed ? 'bg-primary-container' : 'bg-error';
   };
 
-  const formatValue = (val: number | null) => {
-    if (val === null) return 'N/A';
-    return val.toFixed(3);
+  const formatValue = (m: Metric) => {
+    if (m.not_applicable) return 'N/A';
+    return m.value.toFixed(3);
+  };
+
+  const formatStatus = (m: Metric) => {
+    if (m.not_applicable) return 'N/A';
+    return m.passed ? 'Pass' : 'Fail';
   };
 
   return (
@@ -76,21 +82,21 @@ const MetricsDashboard: React.FC = () => {
           </div>
         </header>
 
-        {/* Metrics Grid - Single column on mobile */}
+        {/* Metrics Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-6 mb-12">
           {metrics.map((m, i) => (
             <div key={i} className="bg-surface-container-high p-6 rounded-lg flex flex-col justify-between h-40 md:h-48 border border-outline-variant/10 group relative shadow-md">
               <div className="flex justify-between items-start">
                 <h3 className="font-body text-xs md:text-sm text-on-surface-variant font-medium leading-tight max-w-[70%] capitalize">{m.name.replace(/_/g, ' ')}</h3>
                 <div className="h-[18px] bg-surface-container-highest rounded-full flex items-center px-2 gap-1.5 border border-outline-variant/30">
-                  <span className={`h-1.5 w-1.5 rounded-full ${getBadgeColor(m.passed)}`}></span>
-                  <span className={`font-headline text-[10px] font-bold uppercase ${getStatusColor(m.passed)}`}>
-                    {m.passed === null ? 'N/A' : (m.passed ? 'Pass' : 'Fail')}
+                  <span className={`h-1.5 w-1.5 rounded-full ${getBadgeColor(m)}`}></span>
+                  <span className={`font-headline text-[10px] font-bold uppercase ${getStatusColor(m)}`}>
+                    {formatStatus(m)}
                   </span>
                 </div>
               </div>
               <div className="font-mono text-3xl md:text-4xl font-light tracking-tight">
-                <span className={getStatusColor(m.passed)}>{formatValue(m.value)}</span>
+                <span className={getStatusColor(m)}>{formatValue(m)}</span>
               </div>
               <div className="opacity-0 md:group-hover:opacity-100 absolute bottom-full left-0 mb-2 w-48 p-2 bg-surface-container-highest text-[10px] text-on-surface rounded shadow-xl pointer-events-none transition-opacity z-50">
                 {m.description}
@@ -109,7 +115,6 @@ const MetricsDashboard: React.FC = () => {
                 </p>
              </div>
              
-             {/* Visual outcome placeholder for mobile responsiveness */}
              <div className="bg-surface-container-low p-6 md:p-8 rounded-xl border border-outline-variant/10">
                 <h3 className="font-headline text-sm uppercase tracking-widest text-zinc-500 mb-6">Outcome distribution</h3>
                 <div className="h-48 flex items-end gap-4 md:gap-8 border-l border-b border-outline-variant/30 pb-0 pl-4 relative">

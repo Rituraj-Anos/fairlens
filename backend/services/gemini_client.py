@@ -1,11 +1,14 @@
 """
-gemini_client.py
-Wraps Google Generative AI (Gemini 1.5 Flash) for bias report generation.
+gemini_client.py — Day 6 update
+Full Gemini 1.5 Flash integration with real API calls.
+Falls back to intelligent stub when GEMINI_API_KEY not set.
 """
 import os
 import json
-import logging
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any
+from dotenv import load_dotenv
+
+load_dotenv()
 
 try:
     import google.generativeai as genai
@@ -13,40 +16,43 @@ try:
 except ImportError:
     _GENAI_AVAILABLE = False
 
-logger = logging.getLogger(__name__)
-
 
 BIAS_REPORT_PROMPT = """
-You are an AI fairness auditor analyzing a machine learning model for discrimination.
+You are an AI fairness auditor. A machine learning model has been analyzed for bias.
 
-=== DATASET ===
-Name: {dataset_name}
+Dataset: {dataset_name}
 Protected attribute analyzed: {attribute}
-Group statistics: {group_stats}
 
-=== FAIRNESS METRICS ===
-- Demographic Parity Difference: {dpd}  (fair if |value| ≤ 0.10)
-- Disparate Impact Ratio: {dir_val}     (fair if ≥ 0.80, per EEOC 4/5 rule)
-- Equalized Odds Difference: {eod}      (fair if |value| ≤ 0.10)
-- Statistical Parity Difference: {spd}  (fair if |value| ≤ 0.05)
+Fairness Metrics Results:
+- Demographic Parity Difference: {dpd} (fair threshold: ≤ 0.10, yours: {dpd_status})
+- Disparate Impact Ratio: {dir_val} (fair threshold: ≥ 0.80, yours: {dir_status})
+- Equalized Odds Difference: {eod} (fair threshold: ≤ 0.10, yours: {eod_status})
+- Statistical Parity Difference: {spd} (fair threshold: ≤ 0.05, yours: {spd_status})
 
-=== YOUR TASK ===
-1. **summary**: Explain in 2-3 plain-English sentences what these numbers mean for real people. No jargon.
-2. **root_causes**: 3-4 likely reasons for this bias (e.g., historical data bias, proxy variables, underrepresentation).
-3. **recommendations**: 3 specific, actionable fixes, ordered by impact.
-4. **severity**: Rate as CRITICAL / HIGH / MODERATE / LOW / FAIR.
+Group positive rates: {group_rates}
 
-Respond ONLY in valid JSON — no markdown, no code fences:
-{{"summary": "...", "root_causes": ["...", "..."], "recommendations": ["...", "..."], "severity": "..."}}
+Your task:
+1. Write a 2-3 sentence plain English summary of what these numbers mean for real people. No jargon.
+2. List the 3 most likely root causes of this bias (be specific to this dataset type).
+3. Give 3 concrete actionable recommendations to reduce this bias.
+4. Rate overall severity: CRITICAL / HIGH / MODERATE / LOW / FAIR
+
+Respond ONLY in valid JSON. No markdown, no backticks, no preamble. Pure JSON only:
+{{
+  "summary": "string",
+  "root_causes": ["string", "string", "string"],
+  "recommendations": ["string", "string", "string"],
+  "severity": "string"
+}}
 """
 
 
-def _get_client():
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise EnvironmentError("GEMINI_API_KEY not set in environment.")
+def _get_model():
+    api_key = os.getenv("GEMINI_API_KEY", "")
+    if not api_key or not api_key.startswith("AIza"):
+        raise EnvironmentError("GEMINI_API_KEY not configured or invalid.")
     if not _GENAI_AVAILABLE:
-        raise ImportError("google-generativeai not installed.")
+        raise ImportError("google-generativeai not installed. Run: pip install google-generativeai")
     genai.configure(api_key=api_key)
     model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
     return genai.GenerativeModel(model_name)
@@ -59,82 +65,135 @@ def generate_bias_report(
     dir_val: float,
     eod: float,
     spd: float,
-    group_stats: Optional[List[Dict[str, Any]]] = None,
+    group_rates: Dict[str, float] = None,
 ) -> Dict[str, Any]:
     """
-    Call Gemini to generate a plain-English bias audit report.
-    Returns parsed JSON dict with keys: summary, root_causes, recommendations, severity.
-    Falls back to deterministic stub if Gemini unavailable.
+    Call Gemini 1.5 Flash to generate a plain-English bias audit report.
+    Returns dict with: summary, root_causes, recommendations, severity.
+    Falls back to intelligent stub if Gemini unavailable.
     """
-    group_stats_str = json.dumps(group_stats or [], indent=2) if group_stats else "N/A"
+    group_rates_str = ", ".join(
+        f"{g}: {r:.1%}" for g, r in (group_rates or {}).items()
+    ) or "not available"
 
     prompt = BIAS_REPORT_PROMPT.format(
         dataset_name=dataset_name,
         attribute=attribute,
-        group_stats=group_stats_str,
         dpd=round(dpd, 4),
+        dpd_status="FAIL" if abs(dpd) > 0.10 else "PASS",
         dir_val=round(dir_val, 4),
+        dir_status="FAIL" if dir_val < 0.80 else "PASS",
         eod=round(eod, 4),
+        eod_status="FAIL" if abs(eod) > 0.10 else "PASS",
         spd=round(spd, 4),
+        spd_status="FAIL" if abs(spd) > 0.05 else "PASS",
+        group_rates=group_rates_str,
     )
 
     try:
-        model = _get_client()
+        model = _get_model()
         response = model.generate_content(prompt)
-        raw_text = response.text.strip()
+        raw = response.text.strip()
 
-        # Strip markdown code fences if Gemini ignored instructions
-        if raw_text.startswith("```"):
-            lines = raw_text.split("\n")
-            lines = [l for l in lines if not l.startswith("```")]
-            raw_text = "\n".join(lines)
-            if raw_text.startswith("json"):
-                raw_text = raw_text[4:].strip()
+        # Strip accidental markdown fences
+        if "```" in raw:
+            parts = raw.split("```")
+            for part in parts:
+                part = part.strip()
+                if part.startswith("json"):
+                    part = part[4:].strip()
+                if part.startswith("{"):
+                    raw = part
+                    break
 
-        parsed = json.loads(raw_text)
-        logger.info(f"Gemini report generated for attribute '{attribute}'")
-        return parsed
+        result = json.loads(raw)
 
-    except (EnvironmentError, ImportError) as e:
-        logger.warning(f"Gemini unavailable, using stub: {e}")
-        return _stub_report(attribute, dpd, dir_val)
+        # Validate required keys
+        required = ["summary", "root_causes", "recommendations", "severity"]
+        for key in required:
+            if key not in result:
+                raise ValueError(f"Missing key: {key}")
 
-    except json.JSONDecodeError as e:
-        logger.error(f"Gemini returned invalid JSON: {e}")
-        return _stub_report(attribute, dpd, dir_val, error="Gemini JSON parse failed")
+        result["_source"] = "gemini"
+        return result
+
+    except (EnvironmentError, ImportError):
+        return _intelligent_stub(dataset_name, attribute, dpd, dir_val, eod, spd)
 
     except Exception as e:
-        logger.exception("Gemini call failed")
-        return _stub_report(attribute, dpd, dir_val, error=str(e))
+        # Try stub as fallback
+        stub = _intelligent_stub(dataset_name, attribute, dpd, dir_val, eod, spd)
+        stub["_error"] = str(e)
+        return stub
 
 
-def _stub_report(
-    attribute: str, dpd: float, dir_val: float, error: Optional[str] = None
+def _intelligent_stub(
+    dataset_name: str,
+    attribute: str,
+    dpd: float,
+    dir_val: float,
+    eod: float,
+    spd: float,
 ) -> Dict[str, Any]:
-    """Deterministic stub used when Gemini is unavailable."""
-    severity = (
-        "CRITICAL" if abs(dpd) > 0.30 or dir_val < 0.60 else
-        "HIGH"     if abs(dpd) > 0.20 or dir_val < 0.70 else
-        "MODERATE" if abs(dpd) > 0.10 or dir_val < 0.80 else
-        "LOW"      if abs(dpd) > 0.05 else "FAIR"
+    """
+    Intelligent fallback that generates contextually relevant responses
+    based on actual metric values — not just generic text.
+    """
+    # Determine severity
+    if abs(dpd) >= 0.30 or dir_val < 0.60:
+        severity = "CRITICAL"
+    elif abs(dpd) >= 0.20 or dir_val < 0.70:
+        severity = "HIGH"
+    elif abs(dpd) >= 0.10 or dir_val < 0.80:
+        severity = "MODERATE"
+    elif abs(dpd) >= 0.05:
+        severity = "LOW"
+    else:
+        severity = "FAIR"
+
+    # Direction of bias
+    direction = "higher" if dpd > 0 else "lower"
+    disadvantaged = "one group" if dpd < 0 else "another group"
+
+    # Dataset-specific context
+    dataset_lower = dataset_name.lower()
+    if "hiring" in dataset_lower or "hire" in dataset_lower:
+        context = "hiring decisions"
+        domain_cause = "Historical underrepresentation of certain groups in the workforce"
+        domain_rec = "Implement blind resume screening to remove demographic information from initial evaluation"
+    elif "loan" in dataset_lower or "credit" in dataset_lower:
+        context = "loan approvals"
+        domain_cause = "Socioeconomic disparities reflected in credit history data"
+        domain_rec = "Use alternative credit scoring models that consider non-traditional financial indicators"
+    elif "medical" in dataset_lower or "diagnosis" in dataset_lower:
+        context = "medical diagnoses"
+        domain_cause = "Underrepresentation of certain demographic groups in medical training datasets"
+        domain_rec = "Collect more diverse clinical data and validate the model separately on each demographic group"
+    else:
+        context = "predictions"
+        domain_cause = "Training data that reflects historical societal inequalities"
+        domain_rec = "Audit the training data collection process for systematic sampling bias"
+
+    summary = (
+        f"The model shows a Demographic Parity Difference of {dpd:.3f} for '{attribute}', "
+        f"meaning one group receives {context} at a {direction} rate than others. "
+        f"With a Disparate Impact Ratio of {dir_val:.3f}, "
+        f"{'this violates' if dir_val < 0.80 else 'this passes'} the industry-standard 4/5 rule "
+        f"(threshold: 0.80), indicating {'significant systemic disadvantage' if dir_val < 0.80 else 'acceptable fairness levels'}."
     )
+
     return {
-        "summary": (
-            f"The model shows a Demographic Parity Difference of {dpd:.2f} "
-            f"for '{attribute}', with a Disparate Impact Ratio of {dir_val:.2f}. "
-            f"{'This violates the EEOC 4/5 rule and indicates measurable discrimination.' if dir_val < 0.8 else 'This passes the 4/5 rule.'}"
-        ),
+        "summary": summary,
         "root_causes": [
-            "Historical bias embedded in the training labels.",
-            "Underrepresentation of minority groups in training data.",
-            "Proxy variables correlated with the protected attribute.",
+            domain_cause,
+            f"Proxy variables in the feature set that correlate with '{attribute}' (e.g., zip code, school name)",
+            "Imbalanced representation of demographic groups in the training dataset",
         ],
         "recommendations": [
-            "Apply Reweighing (AIF360) pre-processing to balance sample weights.",
-            "Audit features for proxies (e.g., zip code, school name, name origin).",
-            "Use Exponentiated Gradient (Fairlearn) to enforce fairness constraints during training.",
+            domain_rec,
+            f"Apply Reweighing or Exponentiated Gradient debiasing to reduce the {abs(dpd):.3f} parity gap",
+            "Set up ongoing fairness monitoring to track bias metrics across model versions",
         ],
         "severity": severity,
-        "_stub": True,
-        **({"_error": error} if error else {}),
+        "_source": "stub",
     }
