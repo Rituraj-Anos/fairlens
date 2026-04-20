@@ -228,11 +228,11 @@ def compute_metrics_for_attribute(
             aod = round((tpr_diff + fpr_diff) / 2, 4)
         except Exception as e:
             logger.warning(f"EOD/AOD computation failed: {e}")
-            eod = 0.0
-            aod = 0.0
+            eod = None
+            aod = None
     else:
-        eod = 0.0
-        aod = 0.0
+        eod = None
+        aod = None
 
     metrics = [
         FairnessMetric(
@@ -251,9 +251,9 @@ def compute_metrics_for_attribute(
         ),
         FairnessMetric(
             name="equalized_odds_difference",
-            value=round(eod, 4),
+            value=round(eod, 4) if eod is not None else None,
             threshold=THRESHOLDS["equalized_odds_difference"],
-            passed=abs(eod) <= THRESHOLDS["equalized_odds_difference"],
+            passed=abs(eod) <= THRESHOLDS["equalized_odds_difference"] if eod is not None else None,
             description=METRIC_DESCRIPTIONS["equalized_odds_difference"],
         ),
         FairnessMetric(
@@ -267,7 +267,7 @@ def compute_metrics_for_attribute(
             name="average_odds_difference",
             value=aod,
             threshold=THRESHOLDS["average_odds_difference"],
-            passed=abs(aod) <= THRESHOLDS["average_odds_difference"],
+            passed=abs(aod) <= THRESHOLDS["average_odds_difference"] if aod is not None else None,
             description=METRIC_DESCRIPTIONS["average_odds_difference"],
         ),
     ]

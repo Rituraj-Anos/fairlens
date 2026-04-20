@@ -9,7 +9,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 ALLOWED_EXTENSIONS = {".csv"}
-MAX_FILE_SIZE_MB = 50
+MAX_FILE_SIZE_MB = int(os.getenv("MAX_UPLOAD_SIZE_MB", 50))
 
 
 @router.post("/", response_model=UploadResponse)

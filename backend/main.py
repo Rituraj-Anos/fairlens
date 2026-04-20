@@ -1,8 +1,14 @@
 import logging
+import os
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 from routers import upload, analyze, mitigate, report
+from utils.errors import FairLensError, fairlens_exception_handler
+
+# ─── Load Environment ──────────────────────────────────────────────────────────
+load_dotenv()
 
 # ─── Logging ──────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -14,16 +20,21 @@ logger = logging.getLogger("fairlens")
 app = FastAPI(
     title="FairLens API",
     description="AI Bias Detection & Mitigation Backend",
-    version="1.0.0",
+    version="0.1.0",
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Tighten in production
+    allow_origins=[
+        "http://localhost:5173",  # Vite dev
+        "http://localhost:3000",  # Fallback
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.add_exception_handler(FairLensError, fairlens_exception_handler)
 
 app.include_router(upload.router,   prefix="/api/upload",   tags=["Upload"])
 app.include_router(analyze.router,  prefix="/api/analyze",  tags=["Analyze"])

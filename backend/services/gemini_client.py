@@ -48,7 +48,8 @@ def _get_client():
     if not _GENAI_AVAILABLE:
         raise ImportError("google-generativeai not installed.")
     genai.configure(api_key=api_key)
-    return genai.GenerativeModel("gemini-1.5-flash")
+    model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+    return genai.GenerativeModel(model_name)
 
 
 def generate_bias_report(

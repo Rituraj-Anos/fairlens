@@ -36,9 +36,9 @@ class UploadResponse(BaseModel):
 
 class FairnessMetric(BaseModel):
     name: str
-    value: float
+    value: Optional[float]
     threshold: float
-    passed: bool
+    passed: Optional[bool]
     description: str
 
 
