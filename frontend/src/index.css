@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&display=swap');
 
 @theme {
   --color-surface-dim: #131313;
@@ -55,8 +56,11 @@
   --font-mono: "JetBrains Mono", monospace;
 }
 
+/* ─── Base ─────────────────────────────────────────────────────── */
 :root {
   font-family: 'Manrope', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 h1, h2, h3, h4, h5, h6, .font-headline {
@@ -65,4 +69,104 @@ h1, h2, h3, h4, h5, h6, .font-headline {
 
 body {
   @apply bg-surface-container-lowest text-on-surface min-h-screen;
+  background-color: #0a0a0a;
+}
+
+/* ─── Scrollbar ─────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #3b4b3d; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #00ff8855; }
+
+/* ─── Custom Scrollbar Utility ──────────────────────────────────── */
+.custom-scrollbar::-webkit-scrollbar { width: 3px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #3b4b3d88; border-radius: 999px; }
+
+/* ─── Glass Utilities ───────────────────────────────────────────── */
+.glass {
+  background: rgba(255,255,255,0.03);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.glass-sm {
+  background: rgba(255,255,255,0.02);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.04);
+}
+
+.glow-green {
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.2), 0 0 60px rgba(0, 255, 136, 0.06);
+}
+
+.glow-green-sm {
+  box-shadow: 0 0 12px rgba(0, 255, 136, 0.15);
+}
+
+.text-glow-green {
+  text-shadow: 0 0 20px rgba(0, 255, 136, 0.6);
+}
+
+/* ─── Keyframes ─────────────────────────────────────────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes scan {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 100%; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes ping-soft {
+  75%, 100% { transform: scale(1.8); opacity: 0; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes border-glow {
+  0%, 100% { border-color: rgba(0,255,136,0.2); box-shadow: 0 0 10px rgba(0,255,136,0.1); }
+  50% { border-color: rgba(0,255,136,0.5); box-shadow: 0 0 25px rgba(0,255,136,0.25); }
+}
+
+.animate-float { animation: float 4s ease-in-out infinite; }
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(0,255,136,0.08) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2.5s linear infinite;
+}
+.animate-slide-up { animation: slide-up 0.4s ease-out forwards; }
+.animate-fade-in  { animation: fade-in 0.5s ease-out forwards; }
+.animate-border-glow { animation: border-glow 3s ease-in-out infinite; }
+
+/* ─── Drag Drop Zone ────────────────────────────────────────────── */
+.drop-zone-active {
+  border-color: #00ff88 !important;
+  box-shadow: 0 0 40px rgba(0,255,136,0.15), inset 0 0 60px rgba(0,255,136,0.03);
+}
+
+/* ─── Table Styles ──────────────────────────────────────────────── */
+.fl-table tr:hover td {
+  background: rgba(0,255,136,0.02);
+}
+
+/* ─── Print ─────────────────────────────────────────────────────── */
+@media print {
+  body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 }
